@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Repurposing Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Content Repurposing Tool</h1>
+        <form id="repurpose-form">
+            <input type="url" id="url" name="url" placeholder="Enter URL to repurpose" required>
+            <button type="submit">Repurpose</button>
+        </form>
+        <div id="loading" style="display: none;">Repurposing content...</div>
+        <div id="error" class="error-message" style="display: none;"></div>
+        <div id="results" style="display: none;">
+            <!-- LinkedIn -->
+            <div class="platform-container">
+                <h2><img src="https://cdn.icon-icons.com/icons2/2428/PNG/512/linkedin_black_logo_icon_147114.png" alt="LinkedIn" class="icon"> LinkedIn</h2>
+                <div class="post-content" id="linkedin-post"></div>
+            </div>
+
+            <!-- Twitter -->
+            <div class="platform-container">
+                <h2><img src="https://cdn.icon-icons.com/icons2/3041/PNG/512/twitter_logo_icon_189247.png" alt="Twitter" class="icon"> X/Twitter</h2>
+                <div id="twitter-thread"></div>
+            </div>
+
+            <!-- Instagram -->
+            <div class="platform-container">
+                <h2><img src="https://cdn.icon-icons.com/icons2/1211/PNG/512/1491579602-yumminkysocialmedia22_83100.png" alt="Instagram" class="icon"> Instagram</h2>
+                <div class="post-content" id="instagram-caption"></div>
+                <h3>Reel Idea</h3>
+                <div class="post-content" id="instagram-reel"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('repurpose-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const url = document.getElementById('url').value;
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+
+            try {
+                const response = await fetch('/repurpose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'An unknown error occurred.');
+                }
+
+                const data = await response.json();
+
+                // LinkedIn
+                document.getElementById('linkedin-post').innerText = data.linkedin;
+
+                // Twitter
+                const twitterThread = document.getElementById('twitter-thread');
+                twitterThread.innerHTML = '';
+                data.twitter.forEach((tweet, index) => {
+                    const tweetElement = document.createElement('div');
+                    tweetElement.className = 'tweet';
+                    tweetElement.innerText = `Tweet ${index + 1}: ${tweet}`;
+                    twitterThread.appendChild(tweetElement);
+                });
+
+                // Instagram
+                document.getElementById('instagram-caption').innerText = data.instagram.caption;
+                document.getElementById('instagram-reel').innerText = data.instagram.reel_idea;
+
+                results.style.display = 'block';
+
+            } catch (err) {
+                error.innerText = err.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
